@@ -81,17 +81,17 @@ Mostly, as in UCI Doc
 (method) async Engine.go (params = {}, callback = null) : result
 
 params = {
-  searchmoves: string[];
-  ponder: boolean;
-  wtime: number;
-  btime: number;
-  winc: number;
-  binc: number;
-  movestogo: number;
-  depth: number;
-  nodes: number;
-  mate: number;
-  movetime: number;
+  searchmoves: string[],
+  ponder: boolean,
+  wtime: number,
+  btime: number,
+  winc: number,
+  binc: number,
+  movestogo: number,
+  depth: number,
+  nodes: number,
+  mate: number,
+  movetime: number
 };
 
 callback = (object: info)
@@ -131,7 +131,7 @@ Engine.pvs.length == MultiPV or 1
 
 ```javascript
 Engine.pvs[i] = {
-    score: { 
+  score: { 
     type: string, 
     value: number, 
     cp: number,  // cp converted value
