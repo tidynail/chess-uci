@@ -1,7 +1,7 @@
 {
   "type": "module",
   "name": "chess-uci",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "UCI, Universal Chess Interface, for Node.js",
   "main": "engine.js",
   "scripts": {
