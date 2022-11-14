@@ -1,0 +1,17 @@
+{
+  "type": "module",
+  "name": "chess-uci",
+  "version": "0.1.0",
+  "description": "UCI, Universal Chess Interface, for Node.js",
+  "main": "engine.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "chess",
+    "uci",
+    "node"
+  ],
+  "author": "Young-Jo Song <tidynail@gmail.com>",
+  "license": "MIT"
+}

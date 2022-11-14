@@ -1,0 +1,15 @@
+{
+  "type": "module",
+  "name": "chess-uci-sample",
+  "version": "0.1.0",
+  "description": "Sample for chess-uci",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Young-Jo Song <tidynail@gmail.com>",
+  "license": "MIT",
+  "devDependencies": {
+    "chess-uci": "file:.."
+  }
+}
