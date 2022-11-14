@@ -12,6 +12,10 @@
     "uci",
     "node"
   ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tidynail/chess-uci.git"
+  },
   "author": "Young-Jo Song <tidynail@gmail.com>",
   "license": "MIT"
 }
