@@ -4,11 +4,13 @@ export class Engine {
   /**
    * 
    * @param {string} path 
-   * @param {boolean} log 
+   * @param {boolean} [log] 
+   * @param {boolean} [log_recv]
+   * @param {boolean} [log_send]
    * @return {Engine}
    */
-  static async start(path, log = false) {
-    var engine = new Engine(path,log)
+  static async start(path, log = false, log_recv = true, log_send = true) {
+    var engine = new Engine(path,log, log_recv, log_send)
     await engine.uci();
     return engine;
   }
@@ -24,9 +26,11 @@ export class Engine {
   /**
    * @constructor
    * @param {string} path
-   * @param {boolean} log
-   */
-  constructor(path, log = false) {
+   * @param {boolean} [log] 
+   * @param {boolean} [log]
+   * @param {boolean} [log]
+  */
+  constructor(path, log = false, log_recv = true, log_send = true) {
     this.process = new Process(path);
     if (!this.process.isRunning) {
       if (this.process.error) throw this.process.error;
@@ -41,13 +45,15 @@ export class Engine {
       // {depth, score, moves}
     this.result = {};   // bestmove and ponder
 
-    this.logger=log?console:null;
+    this.logger_recv=(log&&log_recv)?console:null;
+    this.logger_send=(log&&log_send)?console:null;
 
     this.waiting_reply = {};
-    this.info_callback = null;  // callback for info feedback
+    this.on_info = null;  // callback for info
+    this.on_result = null;  // callback for bestmove
 
     this.process.onReadLine((line) => {
-      this.logger?.log(`<- "${line}"`);
+      this.logger_recv?.log(`<- "${line}"`);
       this.parse(line);
     });
 
@@ -85,12 +91,27 @@ export class Engine {
     await this.wait();
   }
   /**
-   * @param {string} fen 
-   * @param {[string]} moves 
+   * @param {object} [params]
+   * @param {string} [params.fen] startpos if missed
+   * @param {string[]} [params.moves]
+   * 
+   * or
+   * @param {string} fen
    */
-  position(fen = "", moves = []) {
-    let pos = fen.length>0?`fen ${fen}`:"startpos";
-    let mvstr = moves.length>0?" moves "+moves.join(" "):"";
+  position(params) {
+    let pos = "startpos";
+    let mvstr = "";
+
+    if(typeof params === "string") {
+      pos = `fen ${params}`;
+    }
+    else if(typeof params === "object")
+    {
+      if(params.hasOwnProperty("fen"))
+        pos = params.fen.length>0?`fen ${params.fen}`:"startpos";
+      if(params.hasOwnProperty("moves"))
+        mvstr = params.moves.length>0?" moves "+params.moves.join(" "):"";        
+    }
     
     let cmd = `position ${pos}${mvstr}`;
     this.send(cmd);
@@ -98,24 +119,36 @@ export class Engine {
   }
 
   /**
-   * @param {object} params
-   * @param {string[]} params.searchmoves restrict search to this moves only
-   * @param {boolean} params.ponder pondering mode
-   * @param {number} params.wtime white left time in ms
-   * @param {number} params.btime black left time in ms
-   * @param {number} params.winc white inc time per move in ms
-   * @param {number} params.binc black inc time per move in ms
-   * @param {number} params.movestogo left move to next time control
-   * @param {number} params.depth plies to search
-   * @param {number} params.nodes nodes to search
-   * @param {number} params.mate search mate in move
-   * @param {number} params.movetime search time in ms
-   * @param {(object: info)} callback callback receiving parsed info
+   * @param {object} [params]
+   * @param {string[]} [params.searchmoves] restrict search to this moves only
+   * @param {boolean} [params.ponder] pondering mode
+   * @param {number} [params.wtime] white left time in ms
+   * @param {number} [params.btime] black left time in ms
+   * @param {number} [params.winc] white inc time per move in ms
+   * @param {number} [params.binc] black inc time per move in ms
+   * @param {number} [params.movestogo] left move to next time control
+   * @param {number} [params.depth] plies to search
+   * @param {number} [params.nodes] nodes to search
+   * @param {number} [params.mate] search mate in move
+   * @param {number} [params.movetime] search time in ms
+   * @param {(object: info)} [onInfo] callback receiving parsed info
+   * @param {(object: result)} [onResult] called at final with bestmove
    * @return {promise<{object: result}>} result object {bestmove, ponder}
+   * or
+   * @param {number} depth
    */
-  async go (params = {}, callback = null) {
+  async go(params = null, onInfo = null, onResult = null) {
     function make(params) {
       let out = "";
+
+      if(typeof params === "undefined" || params == null)
+        return out;
+
+      if(typeof params === "number" && params)
+      {
+        out = ` depth ${params}`;
+        return out;
+      }
 
       const PARAMS = [
         "searchmoves", //[moves]
@@ -159,8 +192,9 @@ export class Engine {
     }
 
     let param = make(params);
-    let cmd = "go " + (param.length>0?param:"infinite");
-    this.info_callback = callback;
+    let cmd = "go" + (param.length>0?param:" infinite");
+    this.on_info = onInfo;
+    this.on_result = onResult;
     this.pvs = [];  // clear pvs
     this.send(cmd);
 
@@ -200,7 +234,7 @@ export class Engine {
       this.waiting_reply[this.CMD_REPLY[name]] = true;
     }
 
-    this.logger?.log(`-> "${cmd}"`);
+    this.logger_send?.log(`-> "${cmd}"`);
     this.process.send(cmd);
   }  
 
@@ -362,8 +396,8 @@ export class Engine {
           this.pvs[ipv].nodes = info.nodes;
       }
 
-      if(this.info_callback)
-        this.info_callback(info);
+      if(this.on_info)
+        this.on_info(info);
     }
     else if(line.startsWith("bestmove")) {
       const matches = line.match(/^bestmove\s([a-hqnr1-8]+)(?:\sponder\s([a-hqnr1-8]+))?/);
@@ -380,6 +414,10 @@ export class Engine {
           }
         }
       }
+
+      if(this.on_result)
+        this.on_result(this.result);
+
       delete this.waiting_reply.bestmove;
     }
     else if(line.startsWith("readyok")) {
