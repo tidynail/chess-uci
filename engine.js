@@ -38,7 +38,7 @@ export class Engine {
     }
 
     this.id = {};
-    this.options = [];
+    this.options = {};
 
     // go result
     this.pvs = [];      // principal variations
@@ -435,17 +435,15 @@ export class Engine {
       const vars = [...line.matchAll(/(?:\svar\s(\S+))/g)].map((match) => match[1]);
 
       if (tokens !== null) {
-        this.options.push(
-          {
-            name: tokens[1],
-            type: tokens[2],
-            default: tokens[3] || null,
-            vars: vars.length ? vars : null,
-            min: tokens[4] || null,
-            max: tokens[5] || null,
-          }
-        );
+        this.options[tokens[1]] = {
+          type: tokens[2],
+          default: tokens[3] || null,
+          vars: vars.length ? vars : null,
+          min: tokens[4] || null,
+          max: tokens[5] || null,
+        };
       }
     }
   }
 }
+
