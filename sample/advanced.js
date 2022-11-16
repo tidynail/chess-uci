@@ -28,4 +28,4 @@ console.log(`${bestpv.score.str}/${bestpv.depth} ${result.bestmove} in ${bestpv.
 engine.pvs.forEach((pv, idx)=>{
   console.log(`${idx+1}:${pv.score.str}/${pv.depth} ${pv.moves[0]}`);
 });
-await engine.quit();
+engine.quit();

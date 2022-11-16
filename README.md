@@ -25,7 +25,7 @@ const result = await engine.go(16);
 
 console.log(`bestmove ${result.bestmove}`);
 
-await engine.quit();
+engine.quit();
 ```
 
 ## Advanced Evaluation
@@ -65,7 +65,7 @@ engine.pvs.forEach((pv, idx)=>{
   console.log(`${idx+1}:${pv.score.str}/${pv.depth} ${pv.moves[0]}`);
 });
 
-await engine.quit();
+engine.quit();
 ```
 
 ## Async Evaluation

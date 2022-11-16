@@ -19,4 +19,4 @@ const result = await engine.go(16);
 //})
 
 console.log(`bestmove ${result.bestmove}`);
-await engine.quit();
+engine.quit();
