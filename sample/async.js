@@ -10,10 +10,10 @@ engine
     fen: "rn3rk1/ppp1b1pp/1n2p3/4N2Q/3qNR2/8/PPP3PP/R1B4K b - - 0 13",
     moves: ['d4e4']
   })
-  .go(16, (info) => {
+  .go(16, info => {
     if(info.depth)
       console.log(`depth: ${info.depth}`);
-  }, (result) => {
+  }, result => {
     const bestpv = engine.pvs[0];
     console.log(`${bestpv.score.str}/${bestpv.depth} ${result.bestmove} in ${bestpv.time}ms, ${bestpv.nodes} searched`);
     

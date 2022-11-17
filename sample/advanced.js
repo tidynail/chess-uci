@@ -17,7 +17,7 @@ engine.position({
   moves: ['d4e4']
 });
 
-const result = await engine.go(null/*infinite*/, (info) => {
+const result = await engine.go(null/*infinite*/, info => {
   if(info.depth&&info.depth>10)
     engine.stop();
 });
