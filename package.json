@@ -3,7 +3,8 @@
   "name": "chess-uci",
   "version": "0.3.2",
   "description": "UCI, Universal Chess Interface, for Node.js",
-  "main": "engine.js",
+  "main": "index.js",
+  "types": "index.d.ts",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
