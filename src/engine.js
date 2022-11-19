@@ -1,6 +1,6 @@
 import { Process } from './process.js';
 
-export default class Engine {
+export class Engine {
   /**
    * 
    * @param {string} path 
