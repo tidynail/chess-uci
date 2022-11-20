@@ -1,6 +1,6 @@
 # chess-uci
 
-UCI, Universal Chess Interface, for Node.js
+UCI, [Universal Chess Interface](http://wbec-ridderkerk.nl/html/UCIProtocol.html), for Node.js
 
 ## Why Another?
 
