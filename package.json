@@ -18,5 +18,8 @@
     "url": "https://github.com/tidynail/chess-uci.git"
   },
   "author": "Young-Jo Song <tidynail@gmail.com>",
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "typescript": "^4.9.3"
+  }
 }

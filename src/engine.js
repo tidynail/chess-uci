@@ -1,12 +1,24 @@
+import { Options, Pv, Result } from './types.js';
 import { Process } from './process.js';
+
+/**
+ * @private
+ */
+const CMD_REPLY = {
+  uci: "uciok",
+  isready: "readyok",
+  stop: "bestmove",
+  go: "bestmove",
+  quit: "quit",     // special, handlded by onExit
+};
 
 export class Engine {
   /**
-   * 
+   * async start
    * @param {string} path 
-   * @param {boolean} [log] 
-   * @param {boolean} [log_recv]
-   * @param {boolean} [log_send]
+   * @param {boolean=false} log
+   * @param {boolean=true} log_recv
+   * @param {boolean=true} log_send
    * @return {Engine}
    */
   static async start(path, log = false, log_recv = true, log_send = true) {
@@ -15,21 +27,14 @@ export class Engine {
     return engine;
   }
 
-  CMD_REPLY = {
-    uci: "uciok",
-    isready: "readyok",
-    stop: "bestmove",
-    go: "bestmove",
-    quit: "quit",     // special, handlded by onExit
-  };
-
   /**
    * @constructor
-   * @param {string} path
-   * @param {boolean} [log] 
-   * @param {boolean} [log]
-   * @param {boolean} [log]
-  */
+   * @param {string} path 
+   * @param {boolean=false} log
+   * @param {boolean=true} log_recv
+   * @param {boolean=true} log_send
+   *    * @return {Engine}
+   */
   constructor(path, log = false, log_recv = true, log_send = true) {
     this.process = new Process(path);
     if (!this.process.isRunning) {
@@ -37,47 +42,71 @@ export class Engine {
       throw new Error("Engine failed to start");
     }
 
+    /** @type {Object[]} */
     this.id = {};
+    /** @type {Options} */
     this.options = {};
 
     // go result
+    /** @type {Pv[]} */
     this.pvs = [];      // principal variations
-      // {depth, score, moves}
+
+    /** @type {Result} */
     this.result = {};   // bestmove and ponder
 
+    /** @private */
     this.logger_recv=(log&&log_recv)?console:null;
+    /** @private */
     this.logger_send=(log&&log_send)?console:null;
-
+    /** @private */
     this.waiting_reply = {};
+    /** @private */
     this.on_info = null;  // callback for info
+    /** @private */
     this.on_result = null;  // callback for bestmove
 
+    /** @private */
     this.process.onReadLine((line) => {
       this.logger_recv?.log(`<- "${line}"`);
       this.parse(line);
     });
 
+    /** @private */
     this.process.onExit((code) => {
       delete this.waiting_reply.quit;
     });
   }
 
+  /**
+   * check if engine is running
+   * @return {boolean}
+   */
   get isRunning() {
     return this.process.isRunning;
   }
 
-  async uci() {
+  /**
+   * send 'uci' command and wait
+   * @return {void}
+   */
+   async uci() {
     this.send("uci");
     await this.wait()
   }
 
-  ucinewgame() {
+  /**
+   * send 'ucinewgame'
+   * @return {Engine}
+   */
+   ucinewgame() {
     this.send('ucinewgame');
     return this;
   }
 
   /**
-   * @param {object} options name: value
+   * send options
+   * @param {Options} options
+   * @return {Engine}
    */
   setoption(options) {
     for (const [key, value] of Object.entries(options)) {
@@ -86,17 +115,18 @@ export class Engine {
     return this;
   }
 
-  async isready() {
+  /**
+   * send 'isready' command and wait
+   * @return {void}
+   */
+   async isready() {
     this.send('isready');
     await this.wait();
   }
   /**
-   * @param {object} [params]
-   * @param {string} [params.fen] startpos if missed
-   * @param {string[]} [params.moves]
-   * 
-   * or
-   * @param {string} fen
+   * send 'position'
+   * @param {Pos | string} params  fen if string
+   * @return {Engine}
    */
   position(params) {
     let pos = "startpos";
@@ -119,23 +149,10 @@ export class Engine {
   }
 
   /**
-   * @param {object} [params]
-   * @param {string[]} [params.searchmoves] restrict search to this moves only
-   * @param {boolean} [params.ponder] pondering mode
-   * @param {number} [params.wtime] white left time in ms
-   * @param {number} [params.btime] black left time in ms
-   * @param {number} [params.winc] white inc time per move in ms
-   * @param {number} [params.binc] black inc time per move in ms
-   * @param {number} [params.movestogo] left move to next time control
-   * @param {number} [params.depth] plies to search
-   * @param {number} [params.nodes] nodes to search
-   * @param {number} [params.mate] search mate in move
-   * @param {number} [params.movetime] search time in ms
-   * @param {(object: info)} [onInfo] callback receiving parsed info
-   * @param {(object: result)} [onResult] called at final with bestmove
-   * @return {promise<{object: result}>} result object {bestmove, ponder}
-   * or
-   * @param {number} depth
+   * go search
+   * @param {Param | number=} params depth if number, infinite if missed
+   * @param {OnInfo=} onInfo callback receiving parsed info
+   * @param {OnResult=} onResult called at final with bestmove result
    */
   async go(params = null, onInfo = null, onResult = null) {
     function make(params) {
@@ -203,7 +220,8 @@ export class Engine {
   }
 
   /**
-   * @return {void}
+   * send 'stop' command
+   * @return {Engine}
    */
   stop() {
     this.send("stop");
@@ -211,6 +229,7 @@ export class Engine {
   }
 
   /**
+   * send 'quit' command and wait
    * @return {void}
    */
   async quit() {
@@ -218,32 +237,41 @@ export class Engine {
     await this.wait();
   }
 
+  /**
+   * send 'ponderhit' command
+   * @return {Engine}
+   */
   ponderhit() {
     this.send("ponderhit");
     return this;
   }
 
   /**
+   * @private
    * @param {string} cmd
    * @return {void}
    */
   send(cmd) {
     // waiting cmds update
     const name = cmd.split(' ')[0];
-    if(this.CMD_REPLY[name]) {
-      this.waiting_reply[this.CMD_REPLY[name]] = true;
+    if(CMD_REPLY[name]) {
+      this.waiting_reply[CMD_REPLY[name]] = true;
     }
 
     this.logger_send?.log(`-> "${cmd}"`);
     this.process.send(cmd);
   }  
 
+  /**
+   * @private
+   */
   kill() {
     this.process.kill();
   }
 
   /**
    * wait until no waiting reply or 'seconds'
+   * @private
    * @param {number} seconds (deafult 5)
    */
   async wait(seconds = 5) {
@@ -274,6 +302,7 @@ export class Engine {
   }
 
   /**
+   * @private
    * @param {number} value
    * @return {number} next max values for mate value
    */
@@ -283,7 +312,7 @@ export class Engine {
   }
 
   /**
-   * 
+   * @private
    * @param {score} score 
    */
   score_string(score) {
@@ -293,6 +322,9 @@ export class Engine {
     return (score.value / 100).toString();
   }
 
+  /**
+   * @private
+   */
   parse(line) {
     if (line.startsWith("info")) {
       let info = {};
