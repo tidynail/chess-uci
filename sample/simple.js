@@ -10,6 +10,7 @@ engine.position('2k5/R1p3bp/1q6/3ppr2/Qp6/1p1PP3/1P1KP2P/2R5 b - - 0 1')
 //});
 
 const result = await engine.go(16);
+//const result = await engine.go({depth:16, searchmoves:['b6b8']});
 //const result = await engine.go({
 //  wtime: 45000,
 //  winc: 1000,
@@ -19,4 +20,7 @@ const result = await engine.go(16);
 //})
 
 console.log(`bestmove ${result.bestmove}`);
+//const bestpv = engine.pvs[0];
+//console.log(`${bestpv.score.str}/${bestpv.depth} ${result.bestmove} in ${bestpv.time}ms, ${bestpv.nodes} searched`);
+
 engine.quit();

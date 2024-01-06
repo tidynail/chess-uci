@@ -1,4 +1,3 @@
-import { Options, Pv, Result } from './types.js';
 import { Process } from './process.js';
 
 /**
@@ -213,6 +212,7 @@ export class Engine {
     this.on_info = onInfo;
     this.on_result = onResult;
     this.pvs = [];  // clear pvs
+
     this.send(cmd);
 
     await this.wait(0);
